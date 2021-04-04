@@ -11,16 +11,28 @@ public class NumericModeTest {
 
     @Test
     public void testCheck() {
-        assertTrue(dataMode.check("012345"));
-        assertFalse(dataMode.check("123abc"));
-        assertTrue(dataMode.check(""));
+        assertTrue(dataMode.checkData("012345"));
+        assertFalse(dataMode.checkData("123abc"));
+        assertTrue(dataMode.checkData(""));
     }
 
     @Test
-    public void testEncode(){
-        assertEquals(dataMode.encode("8675309"), "110110001110000100101001");
-        assertEquals(dataMode.encode("1"), "0001");
-        assertEquals(dataMode.encode("12"), "0001100");
-        assertEquals(dataMode.encode("123"), "0001111011");
+    public void testEncodeData(){
+        assertEquals(dataMode.encodeData("8675309"), "110110001110000100101001");
+        assertEquals(dataMode.encodeData("1"), "0001");
+        assertEquals(dataMode.encodeData("12"), "0001100");
+        assertEquals(dataMode.encodeData("123"), "0001111011");
+    }
+
+    @Test
+    public void testGetBestVersion() throws Exception{
+        assertEquals(dataMode.getBestVersion(0, 101), 3);
+        assertEquals(dataMode.getBestVersion(0, 76), 2);
+        assertEquals(dataMode.getBestVersion(3, 2700), 38);
+    }
+
+    @Test
+    public void testGetDataCodewords() throws Exception{
+        assertEquals(dataMode.getDataCodewords("01234567", 1, 3), "000100000010000000001100010101100110000110000000111011000001000111101100");
     }
 }
