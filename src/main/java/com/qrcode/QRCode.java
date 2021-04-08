@@ -1,13 +1,15 @@
 package com.qrcode;
 
+import com.qrcode.image.QRImage;
 import com.qrcode.mode.DataAnalysis;
 import com.qrcode.mode.DataMode;
 import com.qrcode.reedsolo.RSCode;
 import com.qrcode.tool.BinaryConvert;
+import com.qrcode.tool.Image;
 import com.qrcode.tool.QRTable;
 
 public class QRCode {
-    public void make(String data, int errorCorrectionLevel) throws Exception {
+    public String make(String data, int errorCorrectionLevel) throws Exception {
         DataMode dataMode = DataAnalysis.selectMode(data);
         int version = dataMode.getBestVersion(errorCorrectionLevel, data.length());
         String codeWords = dataMode.getDataCodewords(data, version, errorCorrectionLevel);
@@ -31,6 +33,12 @@ public class QRCode {
         for (int i = 0; i < remainderBits; i++) {
             sb.append("0");
         }
+        // 绘制二维码
+        String encodeData = sb.toString();
+        QRImage qrImage = new QRImage(version);
+        int[][] matrix = qrImage.fillData(encodeData);
+        Image.writeImageFromArray("./QRCode.png", "png", matrix);
+        return null;
     }
 
 
