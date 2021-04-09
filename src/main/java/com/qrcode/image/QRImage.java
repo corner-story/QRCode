@@ -17,10 +17,13 @@ public class QRImage {
     private static int RESERVE = 0xff0000;
 
     private int version = 1;
+    private int ECCLevel = 0;
+    private int MaskPattern = 0;
     private int[][] matrix;
 
-    public QRImage(int version){
+    public QRImage(int version, int ECCLevel){
         this.version = version;
+        this.ECCLevel = ECCLevel;
         int size = (version - 1) * 4 + 21;
         this.matrix = new int[size][size];
         for (int i = 0; i < matrix.length; i++) {
@@ -28,16 +31,24 @@ public class QRImage {
                 matrix[i][j] = EMPTY;
             }
         }
+    }
 
+    public QRImage(int version){
+        this(version, 0);
     }
 
     public int[][] fillData(String encodeData){
+        // 添加定位信息
         drawFinderPatterns();
         drawSeparators();
         drawAlignmentPatterns();
         drawTimingPatterns();
-        drawDarkModuleAndReservedAreas(BLOCK);
+        drawDarkModuleAndReservedAreas(RESERVE);
+        // 填充数据
         drawDataBits(encodeData);
+        // 填充纠错，mask模式，版本等信息
+        drawFormat(ECCLevel, MaskPattern);
+        drawVersion(version);
         return matrix;
     }
 
@@ -142,9 +153,11 @@ public class QRImage {
             while(x >= 0 && x < matrix.length){
                 if (matrix[x][y] == EMPTY){
                     matrix[x][y] = dataBits.charAt(dataIndex++) == '0'? WHITE: BLOCK;
+                    matrix[x][y] = checkMask(x, y);
                 }
                 if (matrix[x][y-1] == EMPTY){
                     matrix[x][y-1] = dataBits.charAt(dataIndex++) == '0'? WHITE: BLOCK;
+                    matrix[x][y-1] = checkMask(x, y - 1);
                 }
                 x += direction;
             }
@@ -158,6 +171,74 @@ public class QRImage {
         }
         assert dataIndex == dataBits.length();
     }
+
+
+    /*
+    *   add Format
+    * */
+    private void drawFormat(int ECCLevel, int maskPattern){
+        // 添加格式信息
+        String format = QRTable.getFormatStringBits(ECCLevel, maskPattern);
+        int dataIndex = 0;
+        // 左上角
+        int x = 8, y = 0;
+        for (int i = 0; i < 8; i++, y++) {
+            if (y == 6)
+                continue;
+            assert matrix[x][y] == RESERVE;
+            drawArea(x, y, format.charAt(dataIndex++) == '0' ? WHITE: BLOCK);
+        }
+        for (int i = 0; i < 9; i++, x--) {
+            if (x == 6)
+                continue;
+            assert matrix[x][y] == RESERVE;
+            drawArea(x, y, format.charAt(dataIndex++) == '0' ? WHITE: BLOCK);
+        }
+        assert x == -1 && dataIndex == format.length();
+        // 左下, 右上
+        dataIndex = 0;
+        x = matrix.length - 1; y = 8;
+        for (int i = 0; i < 7; i++, x--) {
+            assert matrix[x][y] == RESERVE;
+            drawArea(x, y, format.charAt(dataIndex++) == '0' ? WHITE: BLOCK);
+        }
+        x = 8; y = matrix.length - 8;
+        for (int i = 0; i < 8; i++, y++) {
+            assert matrix[x][y] == RESERVE;
+            drawArea(x, y, format.charAt(dataIndex++) == '0' ? WHITE: BLOCK);
+        }
+        assert y == matrix.length && dataIndex == format.length();
+    }
+
+    /*
+    *   add version
+    * */
+    private void drawVersion(int version){
+        if(version < 7)
+            return;
+        String versionBits = new StringBuffer(QRTable.getVersionStringBits(version)).reverse().toString();
+        // 右上
+        int dataIndex = 0;
+        int x = 0, y = matrix.length - 11;
+        for (int i = 0; i < 6; i++) {
+            for (int j = 0; j < 3; j++) {
+                assert matrix[x+i][y+j] == RESERVE;
+                drawArea(x+i, y+ j, versionBits.charAt(dataIndex++) == '0' ? WHITE: BLOCK);
+            }
+        }
+        assert dataIndex == versionBits.length();
+        // 左下
+        x = matrix.length - 11; y = 0;
+        dataIndex = 0;
+        for (int j = 0; j < 6; j++) {
+            for (int i = 0; i < 3; i++) {
+                assert matrix[x+i][y+j] == RESERVE;
+                drawArea(x+i, y+ j, versionBits.charAt(dataIndex++) == '0' ? WHITE: BLOCK);
+            }
+        }
+        assert dataIndex == versionBits.length();
+    }
+
 
     /*
     *   绘制一个区域
@@ -191,4 +272,14 @@ public class QRImage {
         return true;
     }
 
+    /*
+    *   检查该位置是否应该进行masking
+    * */
+    private int checkMask(int x, int y){
+        assert matrix[x][y] == BLOCK || matrix[x][y] == WHITE;
+        if ((x + y) % 2 == 0){
+            return matrix[x][y] == BLOCK ? WHITE: BLOCK;
+        }
+        return matrix[x][y];
+    }
 }

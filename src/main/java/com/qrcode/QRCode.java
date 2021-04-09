@@ -12,6 +12,7 @@ public class QRCode {
     public String make(String data, int errorCorrectionLevel) throws Exception {
         DataMode dataMode = DataAnalysis.selectMode(data);
         int version = dataMode.getBestVersion(errorCorrectionLevel, data.length());
+        System.out.println("二维码版本: " + version);
         String codeWords = dataMode.getDataCodewords(data, version, errorCorrectionLevel);
         // codeWords to blocks
         int[] dataCodeWords = BinaryConvert.splitStringToIntArray(codeWords, 8);

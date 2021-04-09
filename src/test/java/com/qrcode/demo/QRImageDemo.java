@@ -1,13 +1,18 @@
 package com.qrcode.demo;
 
 import com.qrcode.QRCode;
-import com.qrcode.image.QRImage;
 
 public class QRImageDemo {
     public static void main(String[] args) throws Exception{
-        String data = "0123456999999";
+        String data = "1234567890";
+        StringBuilder sb = new StringBuilder();
+        int time = 90;
+        for (int i = 0; i < time; i++) {
+            sb.append(data);
+        }
         int error = 0;
         QRCode qrCode = new QRCode();
-        qrCode.make(data, error);
+        qrCode.make(sb.toString(), error);
     }
+
 }
