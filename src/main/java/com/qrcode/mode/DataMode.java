@@ -59,7 +59,7 @@ public abstract class DataMode {
         sb.append(encodeData(data));
         int maxBits = QRTable.getMaxBits(version, errorCorrectionLevel);
         if (maxBits < sb.length()){
-            throw new Exception("encode data error");
+            throw new Exception("encode data error, data length: " + sb.length() + " maxBits: " + maxBits);
         }
         // add Terminator
         int term = Math.min(4, maxBits - sb.length());

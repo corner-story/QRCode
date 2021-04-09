@@ -8,6 +8,7 @@ public class DataAnalysis {
     static {
         dataModes.add(new NumericMode());
         dataModes.add(new AlphanumericMode());
+        dataModes.add(new ByteMode());
     }
 
     public static DataMode selectMode(String data) throws Exception{
