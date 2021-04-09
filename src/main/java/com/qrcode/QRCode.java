@@ -38,7 +38,7 @@ public class QRCode {
         String encodeData = sb.toString();
         QRImage qrImage = new QRImage(version);
         int[][] matrix = qrImage.fillData(encodeData);
-        Image.writeImageFromArray("./QRCode.png", "png", matrix);
+        Image.writeImageFromArray("./images/QRCode.png", "png", matrix);
         return null;
     }
 

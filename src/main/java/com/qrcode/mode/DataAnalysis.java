@@ -7,6 +7,7 @@ public class DataAnalysis {
     private static List<DataMode> dataModes = new ArrayList<DataMode>();
     static {
         dataModes.add(new NumericMode());
+        dataModes.add(new AlphanumericMode());
     }
 
     public static DataMode selectMode(String data) throws Exception{
