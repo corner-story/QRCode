@@ -9,12 +9,19 @@ import com.qrcode.tool.Image;
 import com.qrcode.tool.QRTable;
 
 public class QRCode {
-    public String make(String data, int errorCorrectionLevel) throws Exception {
+    private int version = 1;
+
+    public String makeQRCode(String data, int errorCorrectionLevel) throws Exception {
+        // 选择合适的编码模式, 获取version 和 最后的0、1字符串
         DataMode dataMode = DataAnalysis.selectMode(data);
-        int version = dataMode.getBestVersion(errorCorrectionLevel, data.length());
+        version = dataMode.getBestVersion(data, errorCorrectionLevel);
+        String codeWords = dataMode.getFinalBits(data, errorCorrectionLevel, version);
+
+        System.out.println("编码数据: " + data);
         System.out.println("二维码版本: " + version);
         System.out.println("编码模式: " + dataMode.getClass().getName());
-        String codeWords = dataMode.getDataCodewords(data, version, errorCorrectionLevel);
+        System.out.println("\n");
+
         // codeWords to blocks
         int[] dataCodeWords = BinaryConvert.splitStringToIntArray(codeWords, 8);
         int[][] blocks = QRTable.getAllBlocks(dataCodeWords, version, errorCorrectionLevel);
@@ -35,18 +42,34 @@ public class QRCode {
         for (int i = 0; i < remainderBits; i++) {
             sb.append("0");
         }
-        // 绘制二维码
-        String encodeData = sb.toString();
-        QRImage qrImage = new QRImage(version);
-        int[][] matrix = qrImage.fillData(encodeData);
-        Image.writeImageFromArray("./images/QRCode.png", "png", matrix);
-        return null;
+        return sb.toString();
     }
 
+    public void saveQRCode(String data, String path) {
+        try {
+            QRImage qrImage = new QRImage(version);
+            int[][] matrix = qrImage.fillData(data);
+            Image.writeImageFromArray(path, "png", matrix);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
 
     public static void main(String[] args) throws Exception {
-        int errorLevel = 0;
-        String data = "1234";
-
+        String data = "0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z   $ % * + - . / :";
+        String[] test = new String[]{
+                "0123456789"                      // test NumericMode
+                ,data          // test AlphanumericMode
+                ,"河北工ｙｅ大学"                    // test Kanji mode
+                ,"河北工业大学, Hello, World! --lambdafate" // test byte mode(UTF-8)
+                ,"http://www.baidu.com/"
+        };
+        int error = 0;
+        for (int i = 0; i < test.length; i++) {
+            QRCode qrCode = new QRCode();
+            String bits = qrCode.makeQRCode(test[i], error);
+            System.out.println(bits);
+            qrCode.saveQRCode(bits, "./images/QRCode-" + i + ".png");
+        }
     }
 }

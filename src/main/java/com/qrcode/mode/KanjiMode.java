@@ -20,7 +20,7 @@ public class KanjiMode extends DataMode {
             for (int i = 0; i < bytes.length; i = i + 2) {
                 int value = ((bytes[i] & 0xff) << 8) | (bytes[i+1] & 0xff);
                 if (value < 0x8140 || value > 0xebbf || (value > 0x9ffc && value < 0xe040)){
-                    // return false;
+                     return false;
                 }
             }
         }catch(Exception e){

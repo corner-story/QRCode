@@ -8,9 +8,9 @@ public class DataAnalysis {
     static {
         dataModes.add(new NumericMode());
         dataModes.add(new AlphanumericMode());
-        dataModes.add(new ByteMode());
         dataModes.add(new KanjiMode());
-        dataModes.add(new ECIMode());
+        dataModes.add(new ByteMode());
+        // dataModes.add(new ECIMode());
     }
 
     public static DataMode selectMode(String data) throws Exception{

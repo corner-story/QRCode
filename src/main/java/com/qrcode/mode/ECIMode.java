@@ -42,9 +42,9 @@ public class ECIMode extends DataMode {
     }
 
     @Override
-    public int getBestVersion(int errorCorrectionLevel, int dataLength) throws Exception {
+    public int getBestVersion(String data, int errorCorrectionLevel) throws Exception {
         int version = -1;
-        int length = (dataLength * 2 + 2) * 8;
+        int length = getDataLength(data);
         for (int i = 1; i <= 40 ; i++) {
             int tmp = length + getCharacterCountIndicatorBits(i);
             if (tmp <= QRTable.getMaxBits(i, errorCorrectionLevel) && (version == -1 || QRTable.getMaxBits(i, errorCorrectionLevel) < QRTable.getMaxBits(version, errorCorrectionLevel))){

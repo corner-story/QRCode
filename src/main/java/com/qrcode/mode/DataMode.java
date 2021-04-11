@@ -4,6 +4,12 @@ import com.qrcode.tool.BinaryConvert;
 import com.qrcode.tool.QRTable;
 
 public abstract class DataMode {
+    /*
+    *   是否使用byte length
+    *   计算Character Count Indicator时使用什么长度
+    * */
+    protected Boolean ByteLength = false;
+
 
     /*
     *   编码模式指示符, 数字编码, 字符编码
@@ -30,10 +36,23 @@ public abstract class DataMode {
     * */
     protected abstract int getCharacterCountIndicatorBits(int version);
 
+
+    /*
+    *   获取data的长度
+    * */
+    protected int getDataLength(String data) throws Exception{
+        if (ByteLength){
+            return data.getBytes("UTF-8").length;
+        }
+        return data.length();
+    }
+
+
     /*
     *   编码模式确定后，可以确定一个最符合要求的二维码版本
     * */
-    public int getBestVersion(int errorCorrectionLevel, int dataLength) throws Exception{
+    public int getBestVersion(String data, int errorCorrectionLevel) throws Exception{
+        int dataLength = getDataLength(data);
         int index = -1;
         for (int i = errorCorrectionLevel; i < CharacterCapacities.length; i = i + 4) {
             if (dataLength <= CharacterCapacities[i] && (index == -1 || CharacterCapacities[i] < CharacterCapacities[index])){
@@ -50,13 +69,15 @@ public abstract class DataMode {
     /*
     *   获取 mode indicator + cci + data encode
     * */
-    public String getDataCodewords(String data, int version, int errorCorrectionLevel) throws Exception{
+    public String getFinalBits(String data, int errorCorrectionLevel, int version) throws Exception{
         StringBuilder sb = new StringBuilder();
+        // 计算 mode indicator + cci + data encode
         int bit = getCharacterCountIndicatorBits(version);
-        String cci = BinaryConvert.convertToBinary(data.length(), bit);
+        String cci = BinaryConvert.convertToBinary(getDataLength(data), bit);
         sb.append(ModeIndicator);
         sb.append(cci);
         sb.append(encodeData(data));
+        // assert
         int maxBits = QRTable.getMaxBits(version, errorCorrectionLevel);
         if (maxBits < sb.length()){
             throw new Exception("encode data error, data length: " + sb.length() + " maxBits: " + maxBits);

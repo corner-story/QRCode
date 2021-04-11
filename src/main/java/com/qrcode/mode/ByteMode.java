@@ -8,26 +8,25 @@ public class ByteMode extends DataMode {
     public ByteMode(){
         this.ModeIndicator = "0100";
         this.CharacterCapacities = QRTable.CharacterCapacities_ByteMode;
+        this.ByteLength = true;
     }
 
     @Override
     protected boolean checkData(String data) {
-        for (int i = 0; i < data.length(); i++) {
-            int tmp = data.charAt(i);
-            if (tmp > 126){
-                return false;
-            }
-        }
         return true;
     }
 
     @Override
     protected String encodeData(String data) {
         StringBuilder sb = new StringBuilder();
-        // byte[] bytes = data.getBytes("ISO-8859-1");
-        for (int i = 0; i < data.length(); i++) {
-            int tmp = data.charAt(i);
-            sb.append(BinaryConvert.convertToBinary(tmp, 8));
+        try{
+            byte[] bytes = data.getBytes("UTF-8");
+            for (int i = 0; i < bytes.length; i++) {
+                int tmp = bytes[i] & 0xff;
+                sb.append(BinaryConvert.convertToBinary(tmp, 8));
+            }
+        } catch(Exception e){
+            System.out.println(e);
         }
         return sb.toString();
     }
