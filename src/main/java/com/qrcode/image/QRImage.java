@@ -275,11 +275,27 @@ public class QRImage {
     /*
     *   检查该位置是否应该进行masking
     * */
-    private int checkMask(int x, int y){
+    private int checkMask(int x, int y, int msk){
         assert matrix[x][y] == BLOCK || matrix[x][y] == WHITE;
-        if ((x + y) % 2 == 0){
+        boolean invert;
+        switch (msk) {
+            case 0:  invert = (x + y) % 2 == 0;                    break;
+            case 1:  invert = y % 2 == 0;                          break;
+            case 2:  invert = x % 3 == 0;                          break;
+            case 3:  invert = (x + y) % 3 == 0;                    break;
+            case 4:  invert = (x / 3 + y / 2) % 2 == 0;            break;
+            case 5:  invert = x * y % 2 + x * y % 3 == 0;          break;
+            case 6:  invert = (x * y % 2 + x * y % 3) % 2 == 0;    break;
+            case 7:  invert = ((x + y) % 2 + x * y % 3) % 2 == 0;  break;
+            default:  throw new AssertionError();
+        }
+        if (invert){
             return matrix[x][y] == BLOCK ? WHITE: BLOCK;
         }
         return matrix[x][y];
+    }
+
+    private int checkMask(int x, int y){
+        return checkMask(x, y, MaskPattern);
     }
 }

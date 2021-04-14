@@ -11,7 +11,7 @@ public class QRImageDemo {
             ,"河北工ｙｅ大学"                    // test Kanji mode
             ,"河北工业大学, Hello, World! --lambdafate" // test byte mode(UTF-8)
         };
-        int error = 0;
+        int error = 1;
         for (int i = 0; i < test.length; i++) {
             QRCode qrCode = new QRCode();
             String bits = qrCode.makeQRCode(test[i], error);
