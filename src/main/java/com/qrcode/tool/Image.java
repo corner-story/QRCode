@@ -4,6 +4,7 @@ package com.qrcode.tool;
 import com.qrcode.image.QRImage;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.File;
@@ -13,9 +14,9 @@ public class Image {
 
 
     /*
-    *   原来的matrix太小, 要进行扩大, 并添加border
-    * */
-    public static int[][] addScalaAndBorder(int[][] matrix, int scale, int borderSize){
+     *   原来的matrix太小, 要进行扩大, 并添加border
+     * */
+    public static int[][] addScalaAndBorder(int[][] matrix, int scale, int borderSize) {
         int version = (matrix.length - 17) / 4;
         assert version >= 1 && version <= 40;
         assert scale >= 1 && scale <= 50;
@@ -32,6 +33,56 @@ public class Image {
         }
         return ans;
     }
+
+    /*
+     *   在中间添加logo
+     * */
+    public static int[][] addLogo(int[][] matrix, int[][] logo) {
+        assert logo.length != 0 && logo.length < matrix.length && logo[0].length < matrix.length;
+        for (int i = 0; i < logo.length; i++) {
+            for (int j = 0; j < logo[i].length; j++) {
+                matrix[(matrix.length - logo.length) / 2 + i][(matrix[0].length - logo[0].length) / 2 + j] = logo[i][j];
+            }
+        }
+        return matrix;
+    }
+
+    /*
+     *   logo预处理, 防止logo太大, 二维码无法读取
+     * */
+    public static int[][] getLogoMatrix(String logoPath, int limit) {
+        BufferedImage logoImage = readImage(logoPath);
+        int[][] logoMatrix = convertImageToArray(logoImage);
+        int h = logoMatrix.length, w = logoMatrix[0].length;
+        int area = h * w;
+        if (area <= limit) {
+            return logoMatrix;
+        }
+        int zoom = (int) Math.sqrt(area * 1.0 / limit);
+        return convertImageToArray(zoomOutImage(logoImage, zoom, 0, 0));
+    }
+
+
+    public static BufferedImage zoomOutImage(BufferedImage originalImage, Integer times, int reducewidth, int reduceheight) {
+        int width = originalImage.getWidth() / times - reducewidth;
+        if (width < 0) {
+            width = originalImage.getWidth();
+        }
+        int height = originalImage.getHeight() / times - reduceheight;
+        if (height < 0) {
+            height = originalImage.getHeight();
+        }
+        if (times == -1) {
+            width = reducewidth;
+            height = reduceheight;
+        }
+        BufferedImage newImage = new BufferedImage(width, height, originalImage.getType());
+        Graphics g = newImage.getGraphics();
+        g.drawImage(originalImage, 0, 0, width, height, null);
+        g.dispose();
+        return newImage;
+    }
+
 
     private static BufferedImage readImage(String imageFile) {
         File file = new File(imageFile);

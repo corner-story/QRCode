@@ -306,4 +306,13 @@ public final class QRTable {
         assert version >= 7 && version <= 40;
         return VersionStrings[version - 7];
     }
+
+    /*
+    *   获取每个纠错级别可以纠错的百分比
+    * */
+    public static double getECLCount(int errorCorrectionLevel){
+        assert errorCorrectionLevel >= 0 && errorCorrectionLevel <= 3;
+        double[] ecl = new double[]{0.07, 0.15, 0.25, 0.30};
+        return ecl[errorCorrectionLevel];
+    }
 }

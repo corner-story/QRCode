@@ -12,6 +12,11 @@ public class QRCode {
     private int version = 1;
     private int errorCorrectionLevel = 0;
 
+    /*
+    *   调用makeQRCode得到的0、1字符串的长度
+    * */
+    private int maxBitLength = 0;
+
     public String makeQRCode(String data, int errorCorrectionLevel) throws Exception {
         // 选择合适的编码模式, 获取version 和 最后的0、1字符串
         DataMode dataMode = DataAnalysis.selectMode(data);
@@ -45,6 +50,7 @@ public class QRCode {
         for (int i = 0; i < remainderBits; i++) {
             sb.append("0");
         }
+        maxBitLength = sb.length();
         return sb.toString();
     }
 
@@ -57,6 +63,8 @@ public class QRCode {
             QRImage qrImage = new QRImage(version, errorCorrectionLevel);
             int[][] matrix = qrImage.fillData(data);
             matrix = Image.addScalaAndBorder(matrix, 10, 10);
+            int[][] logo = Image.getLogoMatrix("./images/qq.png", (int)(maxBitLength * QRTable.getECLCount(errorCorrectionLevel) * 10));
+            matrix = Image.addLogo(matrix, logo);
             Image.writeImageFromArray(path, "png", matrix);
         } catch (Exception e) {
             System.out.println(e);
