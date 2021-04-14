@@ -3,18 +3,22 @@ package com.qrcode.image;
 import com.qrcode.tool.QRTable;
 
 public class QRImage {
-    private static int BLOCK = 0;
-    private static int WHITE = 0xffffff;
+    private static int BLACK = 0x000000;
+
+    /*
+    *   白色
+    * */
+    public final static int WHITE = 0xffffff;
 
     /*
     *   该位置为空，没有放置任何东西
     * */
-    private static int EMPTY = 0x0000ff;
+    private static int EMPTY = Integer.MAX_VALUE;
 
     /*
     *   该位置用做保留位
     * */
-    private static int RESERVE = 0xff0000;
+    private static int RESERVE = Integer.MIN_VALUE;
 
     private int version = 1;
     private int ECCLevel = 0;
@@ -64,9 +68,9 @@ public class QRImage {
         };
         for (int[] xy: pos) {
             int x = xy[0], y = xy[1];
-            drawArea(x, y, 7, 7, BLOCK);
+            drawArea(x, y, 7, 7, BLACK);
             drawArea(x + 1, y + 1, 5, 5, WHITE);
-            drawArea(x + 2, y + 2, 3, 3, BLOCK);
+            drawArea(x + 2, y + 2, 3, 3, BLACK);
         }
     }
 
@@ -93,9 +97,9 @@ public class QRImage {
         for (int i = 0; i < locations.length; i++) {
             for (int j = 0; j < locations.length; j++) {
                 if (checkArea(locations[i] - 2, locations[j] - 2, 5, 5)){
-                    drawArea(locations[i] - 2, locations[j] - 2, 5, 5, BLOCK);
+                    drawArea(locations[i] - 2, locations[j] - 2, 5, 5, BLACK);
                     drawArea(locations[i] - 1, locations[j] - 1, 3, 3, WHITE);
-                    drawArea(locations[i], locations[j], 1, 1, BLOCK);
+                    drawArea(locations[i], locations[j], 1, 1, BLACK);
                 }
             }
         }
@@ -108,7 +112,7 @@ public class QRImage {
         int x = 8, y = 6;
         int count = matrix.length - 16;
         for (int i = 0; i < count; i++, x++) {
-            int color = i % 2 == 0 ? BLOCK: WHITE;
+            int color = i % 2 == 0 ? BLACK: WHITE;
             drawArea(x, y, color);
             drawArea(y, x, color);
         }
@@ -119,7 +123,7 @@ public class QRImage {
     * */
     private void drawDarkModuleAndReservedAreas(int color){
         // 1. add dark module
-        drawArea(matrix.length - 8, 8, BLOCK);
+        drawArea(matrix.length - 8, 8, BLACK);
         // 2. add Format Information Area
         // 左上角
         drawArea(8,0, 1, 6, color);
@@ -152,11 +156,11 @@ public class QRImage {
         while(y > 0){
             while(x >= 0 && x < matrix.length){
                 if (matrix[x][y] == EMPTY){
-                    matrix[x][y] = dataBits.charAt(dataIndex++) == '0'? WHITE: BLOCK;
+                    matrix[x][y] = dataBits.charAt(dataIndex++) == '0'? WHITE: BLACK;
                     matrix[x][y] = checkMask(x, y);
                 }
                 if (matrix[x][y-1] == EMPTY){
-                    matrix[x][y-1] = dataBits.charAt(dataIndex++) == '0'? WHITE: BLOCK;
+                    matrix[x][y-1] = dataBits.charAt(dataIndex++) == '0'? WHITE: BLACK;
                     matrix[x][y-1] = checkMask(x, y - 1);
                 }
                 x += direction;
@@ -186,13 +190,13 @@ public class QRImage {
             if (y == 6)
                 continue;
             assert matrix[x][y] == RESERVE;
-            drawArea(x, y, format.charAt(dataIndex++) == '0' ? WHITE: BLOCK);
+            drawArea(x, y, format.charAt(dataIndex++) == '0' ? WHITE: BLACK);
         }
         for (int i = 0; i < 9; i++, x--) {
             if (x == 6)
                 continue;
             assert matrix[x][y] == RESERVE;
-            drawArea(x, y, format.charAt(dataIndex++) == '0' ? WHITE: BLOCK);
+            drawArea(x, y, format.charAt(dataIndex++) == '0' ? WHITE: BLACK);
         }
         assert x == -1 && dataIndex == format.length();
         // 左下, 右上
@@ -200,12 +204,12 @@ public class QRImage {
         x = matrix.length - 1; y = 8;
         for (int i = 0; i < 7; i++, x--) {
             assert matrix[x][y] == RESERVE;
-            drawArea(x, y, format.charAt(dataIndex++) == '0' ? WHITE: BLOCK);
+            drawArea(x, y, format.charAt(dataIndex++) == '0' ? WHITE: BLACK);
         }
         x = 8; y = matrix.length - 8;
         for (int i = 0; i < 8; i++, y++) {
             assert matrix[x][y] == RESERVE;
-            drawArea(x, y, format.charAt(dataIndex++) == '0' ? WHITE: BLOCK);
+            drawArea(x, y, format.charAt(dataIndex++) == '0' ? WHITE: BLACK);
         }
         assert y == matrix.length && dataIndex == format.length();
     }
@@ -223,7 +227,7 @@ public class QRImage {
         for (int i = 0; i < 6; i++) {
             for (int j = 0; j < 3; j++) {
                 assert matrix[x+i][y+j] == RESERVE;
-                drawArea(x+i, y+ j, versionBits.charAt(dataIndex++) == '0' ? WHITE: BLOCK);
+                drawArea(x+i, y+ j, versionBits.charAt(dataIndex++) == '0' ? WHITE: BLACK);
             }
         }
         assert dataIndex == versionBits.length();
@@ -233,7 +237,7 @@ public class QRImage {
         for (int j = 0; j < 6; j++) {
             for (int i = 0; i < 3; i++) {
                 assert matrix[x+i][y+j] == RESERVE;
-                drawArea(x+i, y+ j, versionBits.charAt(dataIndex++) == '0' ? WHITE: BLOCK);
+                drawArea(x+i, y+ j, versionBits.charAt(dataIndex++) == '0' ? WHITE: BLACK);
             }
         }
         assert dataIndex == versionBits.length();
@@ -276,21 +280,21 @@ public class QRImage {
     *   检查该位置是否应该进行masking
     * */
     private int checkMask(int x, int y, int msk){
-        assert matrix[x][y] == BLOCK || matrix[x][y] == WHITE;
+        assert matrix[x][y] == BLACK || matrix[x][y] == WHITE;
         boolean invert;
         switch (msk) {
             case 0:  invert = (x + y) % 2 == 0;                    break;
-            case 1:  invert = y % 2 == 0;                          break;
-            case 2:  invert = x % 3 == 0;                          break;
+            case 1:  invert = x % 2 == 0;                          break;
+            case 2:  invert = y % 3 == 0;                          break;
             case 3:  invert = (x + y) % 3 == 0;                    break;
-            case 4:  invert = (x / 3 + y / 2) % 2 == 0;            break;
+            case 4:  invert = (x / 2 + y / 3) % 2 == 0;            break;
             case 5:  invert = x * y % 2 + x * y % 3 == 0;          break;
             case 6:  invert = (x * y % 2 + x * y % 3) % 2 == 0;    break;
             case 7:  invert = ((x + y) % 2 + x * y % 3) % 2 == 0;  break;
             default:  throw new AssertionError();
         }
         if (invert){
-            return matrix[x][y] == BLOCK ? WHITE: BLOCK;
+            return matrix[x][y] == BLACK ? WHITE: BLACK;
         }
         return matrix[x][y];
     }

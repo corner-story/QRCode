@@ -1,6 +1,8 @@
 package com.qrcode.tool;
 
 
+import com.qrcode.image.QRImage;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
@@ -8,32 +10,28 @@ import java.io.File;
 import java.io.IOException;
 
 public class Image {
+
+
     /*
-    public static void main(String[] args) {
-        // 读取图片到BufferedImage
-        //BufferedImage bf = readImage("c:\\tmp\\6\\female.png");//这里写你要读取的绝对路径+文件名
-        // 将图片转换为二维数组
-        //int[][] rgbArray1 = convertImageToArray(bf);
-        int BLACK = 0;
-        int WHITE = 0xffffff;
-        int row = 21, clo = 21;
-        int[][] rgbArray1 = new int[row][clo];
-        for (int i = 0; i < row; i++) {
-            for (int j = 0; j < clo; j++) {
-                if((i + j) % 2 == 0){
-                    rgbArray1[i][j] = BLACK;
-                }else{
-                    rgbArray1[i][j] = WHITE;
-                }
+    *   原来的matrix太小, 要进行扩大, 并添加border
+    * */
+    public static int[][] addScalaAndBorder(int[][] matrix, int scale, int borderSize){
+        int version = (matrix.length - 17) / 4;
+        assert version >= 1 && version <= 40;
+        assert scale >= 1 && scale <= 50;
+        int qrLength = matrix.length * scale;
+        int[][] ans = new int[qrLength + borderSize * 2][qrLength + borderSize * 2];
+        int edge = borderSize + qrLength;
+        for (int i = 0; i < ans.length; i++) {
+            for (int j = 0; j < ans.length; j++) {
+                if (i >= borderSize && i < edge && j >= borderSize && j < edge)
+                    ans[i][j] = matrix[(i - borderSize) / scale][(j - borderSize) / scale];
+                else
+                    ans[i][j] = QRImage.WHITE;
             }
         }
-
-        // 输出图片到指定文件
-
-        writeImageFromArray("./QRCode.png", "png", rgbArray1);//这里写你要输出的绝对路径+文件名
-        System.out.println("图片输出完毕!");
+        return ans;
     }
-    */
 
     private static BufferedImage readImage(String imageFile) {
         File file = new File(imageFile);

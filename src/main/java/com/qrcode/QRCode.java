@@ -56,6 +56,7 @@ public class QRCode {
             * */
             QRImage qrImage = new QRImage(version, errorCorrectionLevel);
             int[][] matrix = qrImage.fillData(data);
+            matrix = Image.addScalaAndBorder(matrix, 10, 10);
             Image.writeImageFromArray(path, "png", matrix);
         } catch (Exception e) {
             System.out.println(e);
