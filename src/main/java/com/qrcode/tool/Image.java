@@ -5,8 +5,11 @@ import com.qrcode.image.QRImage;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
 import java.awt.image.RenderedImage;
+import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
 
@@ -37,7 +40,8 @@ public class Image {
     /*
      *   在中间添加logo
      * */
-    public static int[][] addLogo(int[][] matrix, int[][] logo) {
+    public static int[][] addLogo(int[][] matrix, String logoPath, int logoSize) {
+        int[][] logo = getLogoMatrix(logoPath, logoSize);
         assert logo.length != 0 && logo.length < matrix.length && logo[0].length < matrix.length;
         for (int i = 0; i < logo.length; i++) {
             for (int j = 0; j < logo[i].length; j++) {
@@ -50,39 +54,75 @@ public class Image {
     /*
      *   logo预处理, 防止logo太大, 二维码无法读取
      * */
-    public static int[][] getLogoMatrix(String logoPath, int limit) {
-        BufferedImage logoImage = readImage(logoPath);
-        int[][] logoMatrix = convertImageToArray(logoImage);
-        int h = logoMatrix.length, w = logoMatrix[0].length;
-        int area = h * w;
-        if (area <= limit) {
-            return logoMatrix;
-        }
-        int zoom = (int) Math.sqrt(area * 1.0 / limit);
-        return convertImageToArray(zoomOutImage(logoImage, zoom, 0, 0));
+    private static int[][] getLogoMatrix(String logoPath, int logoSize) {
+        BufferedImage logo = reSize(logoPath, logoSize, logoSize, true);
+        return convertImageToArray(logo);
     }
 
 
-    public static BufferedImage zoomOutImage(BufferedImage originalImage, Integer times, int reducewidth, int reduceheight) {
-        int width = originalImage.getWidth() / times - reducewidth;
-        if (width < 0) {
-            width = originalImage.getWidth();
+    public static BufferedImage reSize(String path, int width, int height, boolean equalScale) {
+        File srcImg = new File(path);
+        String type = getImageType(srcImg);
+        if (type == null) {
+            return null;
         }
-        int height = originalImage.getHeight() / times - reduceheight;
-        if (height < 0) {
-            height = originalImage.getHeight();
+        if (width < 0 || height < 0) {
+            return null;
         }
-        if (times == -1) {
-            width = reducewidth;
-            height = reduceheight;
+
+        BufferedImage srcImage = null;
+        try {
+            srcImage = ImageIO.read(srcImg);
+            System.out.println("srcImg size=" + srcImage.getWidth() + "X" + srcImage.getHeight());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
-        BufferedImage newImage = new BufferedImage(width, height, originalImage.getType());
-        Graphics g = newImage.getGraphics();
-        g.drawImage(originalImage, 0, 0, width, height, null);
-        g.dispose();
-        return newImage;
+        // targetW，targetH分别表示目标长和宽
+        BufferedImage target = null;
+        if (srcImage != null) {
+            double sx = (double) width / srcImage.getWidth();
+            double sy = (double) height / srcImage.getHeight();
+            // 等比缩放
+            if (equalScale) {
+                if (sx > sy) {
+                    sx = sy;
+                    width = (int) (sx * srcImage.getWidth());
+                } else {
+                    sy = sx;
+                    height = (int) (sy * srcImage.getHeight());
+                }
+            }
+            System.out.println("destImg size=" + width + "X" + height);
+            ColorModel cm = srcImage.getColorModel();
+            WritableRaster raster = cm.createCompatibleWritableRaster(width, height);
+            boolean alphaPremultiplied = cm.isAlphaPremultiplied();
+
+            target = new BufferedImage(cm, raster, alphaPremultiplied, null);
+            Graphics2D g = target.createGraphics();
+            // smoother than exlax:
+            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g.drawRenderedImage(srcImage, AffineTransform.getScaleInstance(sx, sy));
+            g.dispose();
+        }
+        return target;
     }
 
+
+    public static String getImageType(File file) {
+        if (file != null && file.exists() && file.isFile()) {
+            String fileName = file.getName();
+            int index = fileName.lastIndexOf(".");
+            if (index != -1 && index < fileName.length() - 1) {
+                return fileName.substring(index + 1);
+            }
+        }
+        return null;
+    }
+
+    public static String getImageType(String path){
+        return getImageType(new File(path));
+    }
 
     private static BufferedImage readImage(String imageFile) {
         File file = new File(imageFile);
