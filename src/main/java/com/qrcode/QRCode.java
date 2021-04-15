@@ -86,6 +86,7 @@ public class QRCode {
             matrix = Image.addScaleAndBorder(matrix, pixelSize, borderSize);
             if (logoPath != null)
                 matrix = Image.addLogo(matrix, logoPath,(matrix.length - 20) / 5);
+
             Image.writeImageFromArray(savePath, Image.getImageType(savePath), matrix);
         } catch (Exception e) {
             System.out.println(e);

@@ -72,20 +72,17 @@ public class Image {
         return convertImageToArray(logo);
     }
 
-
-    public static String getImageType(File file) {
-        if (file != null && file.exists() && file.isFile()) {
-            String fileName = file.getName();
-            int index = fileName.lastIndexOf(".");
-            if (index != -1 && index < fileName.length() - 1) {
-                return fileName.substring(index + 1);
-            }
-        }
-        return null;
-    }
-
-    public static String getImageType(String path){
-        return getImageType(new File(path));
+    public static String getImageType(String imagePath){
+        String imageType = "png";
+        if (imagePath == null)
+            return imageType;
+        String[] items = imagePath.split(".");
+        if (items.length < 2)
+            return imageType;
+        String last = items[items.length - 1];
+        if (last.equals("png") || last.equals("jpg") || last.equals("jepg"))
+            return last;
+        return imagePath;
     }
 
     private static BufferedImage readImage(String imageFile) {
