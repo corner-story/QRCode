@@ -27,11 +27,16 @@ public class QRCode {
     *   data: 要编码的数据
     *   errorCorrectionLevel: 0~3, 纠错级别
     * */
-    public String makeQRCode(String data, int errorCorrectionLevel) throws Exception {
+    public String makeQRCode(String data, Integer errorCorrectionLevel, Integer selectVersion) throws Exception {
+        if (errorCorrectionLevel == null)
+            errorCorrectionLevel = 0;
+        if (selectVersion == null)
+            selectVersion = 1;
         // 选择合适的编码模式, 获取version 和 最后的0、1字符串
         DataMode dataMode = DataAnalysis.selectMode(data);
         /*记录这里的version和ecl, saveQRCode 中要用到ecl*/
         this.version = dataMode.getBestVersion(data, errorCorrectionLevel);
+        this.version = Math.max(this.version, selectVersion);
         this.errorCorrectionLevel = errorCorrectionLevel;
         String codeWords = dataMode.getFinalBits(data, errorCorrectionLevel, version);
 
@@ -68,8 +73,8 @@ public class QRCode {
                           ,String savePath
                           ,Integer FinderColor
                           ,Integer DataColor
-                          ,int pixelSize
-                          ,int borderSize
+                          ,Integer pixelSize
+                          ,Integer borderSize
                           ,String logoPath) {
         try {
             /*
@@ -78,7 +83,7 @@ public class QRCode {
             * */
             QRImage qrImage = new QRImage(version, errorCorrectionLevel);
             int[][] matrix = qrImage.fillData(data, FinderColor, DataColor);
-            matrix = Image.addScalaAndBorder(matrix, pixelSize, borderSize);
+            matrix = Image.addScaleAndBorder(matrix, pixelSize, borderSize);
             if (logoPath != null)
                 matrix = Image.addLogo(matrix, logoPath,(matrix.length - 20) / 5);
             Image.writeImageFromArray(savePath, Image.getImageType(savePath), matrix);
@@ -88,9 +93,14 @@ public class QRCode {
     }
 
     public void saveQRCode(String data, String savePath){
-        saveQRCode(data, savePath, null, null, 10, 10, null);
+        saveQRCode(data, savePath, null, null, null, null, null);
     }
 
+    public String makeQRCode(String data, int errorCorrectionLevel) throws Exception{
+        return makeQRCode(data, errorCorrectionLevel, null);
+    }
+
+    /*
     public static void main(String[] args) throws Exception {
         String data = "0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z   $ % * + - . / :";
         String data1 = "祝祖国母亲生日快乐❤\n" +
@@ -112,10 +122,11 @@ public class QRCode {
 
         for (int i = 0; i < test.length; i++) {
             QRCode qrCode = new QRCode();
-            String bits = qrCode.makeQRCode(test[i], error);
+            String bits = qrCode.makeQRCode(test[i], error, 20);
             System.out.println(bits);
             System.out.println("");
             qrCode.saveQRCode(bits, "./images/QRCode-" + i + ".png");
         }
     }
+    */
 }

@@ -2,14 +2,11 @@ package com.qrcode.tool;
 
 
 import com.qrcode.image.QRImage;
+import net.coobird.thumbnailator.Thumbnails;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
 import java.awt.image.RenderedImage;
-import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
 
@@ -19,9 +16,18 @@ public class Image {
     /*
      *   原来的matrix太小, 要进行扩大, 并添加border
      * */
-    public static int[][] addScalaAndBorder(int[][] matrix, int scale, int borderSize) {
+    public static int[][] addScaleAndBorder(int[][] matrix, Integer scale, Integer borderSize) {
         int version = (matrix.length - 17) / 4;
         assert version >= 1 && version <= 40;
+        if (borderSize == null)
+            borderSize = 10;
+        if (scale == null){
+            scale = 1;
+            int length = version <= 20? 300: 400;
+            int defaultSize = length * length;
+            while((matrix.length * matrix.length) * (scale * scale) < defaultSize)
+                scale++;
+        }
         assert scale >= 1 && scale <= 50;
         int qrLength = matrix.length * scale;
         int[][] ans = new int[qrLength + borderSize * 2][qrLength + borderSize * 2];
@@ -31,7 +37,7 @@ public class Image {
                 if (i >= borderSize && i < edge && j >= borderSize && j < edge)
                     ans[i][j] = matrix[(i - borderSize) / scale][(j - borderSize) / scale];
                 else
-                    ans[i][j] = QRImage.WHITE;
+                    ans[i][j] = 0xffffff;
             }
         }
         return ans;
@@ -55,57 +61,15 @@ public class Image {
      *   logo预处理, 防止logo太大, 二维码无法读取
      * */
     private static int[][] getLogoMatrix(String logoPath, int logoSize) {
-        BufferedImage logo = reSize(logoPath, logoSize, logoSize, true);
-        return convertImageToArray(logo);
-    }
-
-
-    public static BufferedImage reSize(String path, int width, int height, boolean equalScale) {
-        File srcImg = new File(path);
-        String type = getImageType(srcImg);
-        if (type == null) {
-            return null;
-        }
-        if (width < 0 || height < 0) {
-            return null;
-        }
-
-        BufferedImage srcImage = null;
+        BufferedImage logo = null;
         try {
-            srcImage = ImageIO.read(srcImg);
-            System.out.println("srcImg size=" + srcImage.getWidth() + "X" + srcImage.getHeight());
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+            logo = Thumbnails.of(logoPath)
+                    .size(logoSize, logoSize)
+                    .asBufferedImage();
+        }catch (Exception e){
+            System.out.println(e);
         }
-        // targetW，targetH分别表示目标长和宽
-        BufferedImage target = null;
-        if (srcImage != null) {
-            double sx = (double) width / srcImage.getWidth();
-            double sy = (double) height / srcImage.getHeight();
-            // 等比缩放
-            if (equalScale) {
-                if (sx > sy) {
-                    sx = sy;
-                    width = (int) (sx * srcImage.getWidth());
-                } else {
-                    sy = sx;
-                    height = (int) (sy * srcImage.getHeight());
-                }
-            }
-            System.out.println("destImg size=" + width + "X" + height);
-            ColorModel cm = srcImage.getColorModel();
-            WritableRaster raster = cm.createCompatibleWritableRaster(width, height);
-            boolean alphaPremultiplied = cm.isAlphaPremultiplied();
-
-            target = new BufferedImage(cm, raster, alphaPremultiplied, null);
-            Graphics2D g = target.createGraphics();
-            // smoother than exlax:
-            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-            g.drawRenderedImage(srcImage, AffineTransform.getScaleInstance(sx, sy));
-            g.dispose();
-        }
-        return target;
+        return convertImageToArray(logo);
     }
 
 
