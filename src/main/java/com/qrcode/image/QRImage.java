@@ -2,8 +2,6 @@ package com.qrcode.image;
 
 import com.qrcode.tool.QRTable;
 
-import javax.xml.crypto.Data;
-
 public class QRImage {
     private static int BLACK = 0x000000;
 

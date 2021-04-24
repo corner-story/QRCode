@@ -1,5 +1,8 @@
 package com.qrcode;
 
+import com.google.zxing.*;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 import com.qrcode.image.QRImage;
 import com.qrcode.mode.DataAnalysis;
 import com.qrcode.mode.DataMode;
@@ -7,27 +10,134 @@ import com.qrcode.reedsolo.RSCode;
 import com.qrcode.tool.BinaryConvert;
 import com.qrcode.tool.Image;
 import com.qrcode.tool.QRTable;
+import net.coobird.thumbnailator.Thumbnails;
+import net.coobird.thumbnailator.geometry.Positions;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.util.HashMap;
 
 /*
-*   QRCode: 二维码编码及生成二维码图片
-*
-*
-*
-* */
+ *   QRCode: 二维码编码及生成二维码图片
+ *
+ *
+ *
+ * */
 public class QRCode {
+    public static QRCode of() {
+        return new QRCode();
+    }
+
+    public static String decode(String filePath) {
+        BufferedImage image;
+        String data = null;
+        try {
+            image = ImageIO.read(new File(filePath));
+            LuminanceSource source = new BufferedImageLuminanceSource(image);
+            Binarizer binarizer = new HybridBinarizer(source);
+            BinaryBitmap binaryBitmap = new BinaryBitmap(binarizer);
+            HashMap<DecodeHintType, Object> hints = new HashMap<>();
+            hints.put(DecodeHintType.CHARACTER_SET, "UTF-8");
+            Result result = new MultiFormatReader().decode(binaryBitmap, hints);// 对图像进行解码
+            String content = result.getText();
+            data = content;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return data;
+    }
+
     private int version = 1;
     private int errorCorrectionLevel = 0;
 
-    /*
-    *   调用makeQRCode得到的0、1字符串的长度
-    * */
-    private int maxBitLength = 0;
+    private Integer selectVersion = null;
+    private Integer FinderColor = null;
+    private Integer DataColor = null;
+    private Integer pixelSize = null;
+    private Integer borderSize = null;
 
     /*
-    *   data: 要编码的数据
-    *   errorCorrectionLevel: 0~3, 纠错级别
-    * */
-    public String makeQRCode(String data, Integer errorCorrectionLevel, Integer selectVersion) throws Exception {
+     *   调用makeQRCode之后得到的编码序列
+     *   bits 将用于填充到二维数组中
+     * */
+    private String bits = "";
+
+    private QRCode() {
+    }
+
+    public QRCode version(Integer selectVersion) {
+        if (selectVersion != null && 1 <= selectVersion && selectVersion <= 40)
+            this.selectVersion = selectVersion;
+        return this;
+    }
+
+    public QRCode ecl(Integer ecl) {
+        if (ecl != null && 0 <= ecl && ecl <= 3)
+            errorCorrectionLevel = ecl;
+        return this;
+    }
+
+    public QRCode findColor(Integer finderColor) {
+        this.FinderColor = finderColor;
+        return this;
+    }
+
+    public QRCode dataColor(Integer dataColor) {
+        this.DataColor = dataColor;
+        return this;
+    }
+
+    public QRCode pixelSize(Integer pixelSize) {
+        this.pixelSize = pixelSize;
+        return this;
+    }
+
+    public QRCode borderSize(Integer borderSize) {
+        this.borderSize = borderSize;
+        return this;
+    }
+
+    public QRCode encode(String data) throws Exception {
+        this.bits = getQRCodeBits(data, errorCorrectionLevel, selectVersion);
+        return this;
+    }
+
+    public QRCode toFile(String savePath) {
+        int[][] matrix = getQRCodeMatrix(bits, FinderColor, DataColor, pixelSize, borderSize);
+        Image.writeImageFromArray(savePath, Image.getImageType(savePath), matrix);
+        return this;
+    }
+
+    public QRCode toFile(String savePath, String logoPath) {
+        toFile(savePath).addLogo(savePath, logoPath);
+        return this;
+    }
+
+    private void addLogo(String origin, String logo) {
+        if (logo == null)
+            return;
+        try {
+            BufferedImage logoImage = Thumbnails.of(new File(logo))
+                    .size(60, 60)
+                    .asBufferedImage();
+
+            Thumbnails.of(new File(origin))
+                    .size(300, 300)
+                    .watermark(Positions.CENTER, logoImage, 1.0f)
+                    .outputQuality(0.8)
+                    .toFile(origin);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+
+
+    /*
+     *   data: 要编码的数据
+     *   errorCorrectionLevel: 0~3, 纠错级别
+     * */
+    private String getQRCodeBits(String data, Integer errorCorrectionLevel, Integer selectVersion) throws Exception {
         if (errorCorrectionLevel == null)
             errorCorrectionLevel = 0;
         if (selectVersion == null)
@@ -65,69 +175,21 @@ public class QRCode {
         for (int i = 0; i < remainderBits; i++) {
             sb.append("0");
         }
-        maxBitLength = sb.length();
         return sb.toString();
     }
 
-    public void saveQRCode(String data
-                          ,String savePath
-                          ,Integer FinderColor
-                          ,Integer DataColor
-                          ,Integer pixelSize
-                          ,Integer borderSize
-                          ,String logoPath) {
-        try {
-            /*
-            *   这里要使用errorCorrectionLevel初始化QRImage, 否则只能使用ecl为0的纠错级别
-            *   ecl设置为其他时生成的二维码无法识别
-            * */
-            QRImage qrImage = new QRImage(version, errorCorrectionLevel);
-            int[][] matrix = qrImage.fillData(data, FinderColor, DataColor);
-            matrix = Image.addScaleAndBorder(matrix, pixelSize, borderSize);
-            if (logoPath != null)
-                matrix = Image.addLogo(matrix, logoPath,(matrix.length - 20) / 5);
-
-            Image.writeImageFromArray(savePath, Image.getImageType(savePath), matrix);
-        } catch (Exception e) {
-            System.out.println(e);
-        }
+    private int[][] getQRCodeMatrix(String bits
+            , Integer FinderColor
+            , Integer DataColor
+            , Integer pixelSize
+            , Integer borderSize) {
+        /*
+         *   这里要使用errorCorrectionLevel初始化QRImage, 否则只能使用ecl为0的纠错级别
+         *   ecl设置为其他时生成的二维码无法识别
+         * */
+        QRImage qrImage = new QRImage(version, errorCorrectionLevel);
+        int[][] matrix = qrImage.fillData(bits, FinderColor, DataColor);
+        matrix = Image.addScaleAndBorder(matrix, pixelSize, borderSize);
+        return matrix;
     }
-
-    public void saveQRCode(String data, String savePath){
-        saveQRCode(data, savePath, null, null, null, null, null);
-    }
-
-    public String makeQRCode(String data, int errorCorrectionLevel) throws Exception{
-        return makeQRCode(data, errorCorrectionLevel, null);
-    }
-
-    /*
-    public static void main(String[] args) throws Exception {
-        String data = "0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z   $ % * + - . / :";
-        String data1 = "祝祖国母亲生日快乐❤\n" +
-                "\n" +
-                "——祖国母亲的小儿砸LXW";
-        String[] test = new String[]{
-                "0123456789"                      // test NumericMode
-                ,data          // test AlphanumericMode
-                ,"河北工ｙｅ大学"                    // test Kanji mode
-                ,"河北工业大学, Hello, World! --lambdafate" // test byte mode(UTF-8)
-                ,"http://www.baidu.com/"
-                ,data1
-        };
-        int error = 0;
-
-        // data = " U V W X Y Z  $ % * + - . / :";
-        // test = new String[]{data};
-        // error = 2;
-
-        for (int i = 0; i < test.length; i++) {
-            QRCode qrCode = new QRCode();
-            String bits = qrCode.makeQRCode(test[i], error, 20);
-            System.out.println(bits);
-            System.out.println("");
-            qrCode.saveQRCode(bits, "./images/QRCode-" + i + ".png");
-        }
-    }
-    */
 }

@@ -1,9 +1,5 @@
 package com.qrcode.tool;
 
-
-import com.qrcode.image.QRImage;
-import net.coobird.thumbnailator.Thumbnails;
-
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
@@ -20,12 +16,12 @@ public class Image {
         int version = (matrix.length - 17) / 4;
         assert version >= 1 && version <= 40;
         if (borderSize == null)
-            borderSize = 10;
-        if (scale == null){
+            borderSize = 0;
+        if (scale == null) {
             scale = 1;
-            int length = version <= 20? 300: 400;
+            int length = version <= 20 ? 300 : 400;
             int defaultSize = length * length;
-            while((matrix.length * matrix.length) * (scale * scale) < defaultSize)
+            while ((matrix.length * matrix.length) * (scale * scale) < defaultSize)
                 scale++;
         }
         assert scale >= 1 && scale <= 50;
@@ -43,36 +39,8 @@ public class Image {
         return ans;
     }
 
-    /*
-     *   在中间添加logo
-     * */
-    public static int[][] addLogo(int[][] matrix, String logoPath, int logoSize) {
-        int[][] logo = getLogoMatrix(logoPath, logoSize);
-        assert logo.length != 0 && logo.length < matrix.length && logo[0].length < matrix.length;
-        for (int i = 0; i < logo.length; i++) {
-            for (int j = 0; j < logo[i].length; j++) {
-                matrix[(matrix.length - logo.length) / 2 + i][(matrix[0].length - logo[0].length) / 2 + j] = logo[i][j];
-            }
-        }
-        return matrix;
-    }
 
-    /*
-     *   logo预处理, 防止logo太大, 二维码无法读取
-     * */
-    private static int[][] getLogoMatrix(String logoPath, int logoSize) {
-        BufferedImage logo = null;
-        try {
-            logo = Thumbnails.of(logoPath)
-                    .size(logoSize, logoSize)
-                    .asBufferedImage();
-        }catch (Exception e){
-            System.out.println(e);
-        }
-        return convertImageToArray(logo);
-    }
-
-    public static String getImageType(String imagePath){
+    public static String getImageType(String imagePath) {
         String imageType = "png";
         if (imagePath == null)
             return imageType;
